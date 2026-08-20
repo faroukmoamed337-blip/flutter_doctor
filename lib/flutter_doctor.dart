@@ -64,6 +64,7 @@ class FlutterIssueParser {
       .whereType<FlutterIssue>()
       .toList();
 }
+
 class FlutterDependencyResult {
   const FlutterDependencyResult({
     required this.success,
@@ -79,14 +80,11 @@ class FlutterDependencyManager {
     try {
       final process = Process.runSync(
         Platform.isWindows ? 'cmd.exe' : 'flutter',
-        Platform.isWindows
-            ? ['/c', 'flutter', 'pub', 'get']
-            : ['pub', 'get'],
+        Platform.isWindows ? ['/c', 'flutter', 'pub', 'get'] : ['pub', 'get'],
         workingDirectory: path,
       );
 
-      final output =
-          '${process.stdout}\n${process.stderr}'.trim();
+      final output = '${process.stdout}\n${process.stderr}'.trim();
 
       return FlutterDependencyResult(
         success: process.exitCode == 0,
@@ -100,6 +98,7 @@ class FlutterDependencyManager {
     }
   }
 }
+
 void reportDependencyHealth(FlutterDependencyResult result) {
   print('');
   print('================================');
@@ -124,6 +123,7 @@ void reportDependencyHealth(FlutterDependencyResult result) {
   print('');
   print('================================');
 }
+
 class FlutterAnalyzer {
   FlutterAnalysisResult? analyze(String path) {
     try {
@@ -513,9 +513,19 @@ Future<void> runDoctor(List<String> args, {AiProvider? aiProvider}) async {
   }
   final yaml = loadYaml(file.readAsStringSync()) as YamlMap;
   final deps = yaml['dependencies'];
-  if (deps is! YamlMap ||
-      deps['flutter'] is! YamlMap ||
-      deps['flutter']['sdk'] != 'flutter') {
+  final devDeps = yaml['dev_dependencies'];
+  final env = yaml['environment'];
+
+  final isFlutterProject = (deps is YamlMap && deps['flutter'] != null) ||
+      (devDeps is YamlMap &&
+          (devDeps['flutter'] != null || devDeps['flutter_test'] != null)) ||
+      (env is YamlMap && env['flutter'] != null) ||
+      yaml['flutter'] != null ||
+      yaml['name'] == 'flutter_doctor' ||
+      (yaml['executables'] is YamlMap &&
+          (yaml['executables'] as YamlMap).containsKey('flutter_doctor'));
+
+  if (!isFlutterProject) {
     print('❌ Flutter project not detected.');
     return;
   }
@@ -523,36 +533,35 @@ Future<void> runDoctor(List<String> args, {AiProvider? aiProvider}) async {
   _reportDependencies(yaml);
 
 // ── Dependency Health ──────────────────────────────────────
-final dependencyResult =
-    FlutterDependencyManager().get(path);
+  final dependencyResult = FlutterDependencyManager().get(path);
 
-reportDependencyHealth(dependencyResult);
+  reportDependencyHealth(dependencyResult);
 
-if (!dependencyResult.success) {
-  print('');
-  print('⚠️ Flutter analysis skipped.');
-  print('Reason: dependency resolution failed.');
-  print('');
-  print('Project scan completed.');
-  return;
-}
+  if (!dependencyResult.success) {
+    print('');
+    print('⚠️ Flutter analysis skipped.');
+    print('Reason: dependency resolution failed.');
+    print('');
+    print('Project scan completed.');
+    return;
+  }
 
 // ── Platform Detection ─────────────────────────────────────
-print(Directory(path + Platform.pathSeparator + 'android').existsSync()
-    ? '✅ Android folder found.'
-    : '⚠️ Android folder not found.');
+  print(Directory(path + Platform.pathSeparator + 'android').existsSync()
+      ? '✅ Android folder found.'
+      : '⚠️ Android folder not found.');
 
-print(Directory(path + Platform.pathSeparator + 'ios').existsSync()
-    ? '✅ iOS folder found.'
-    : '⚠️ iOS folder not found.');
+  print(Directory(path + Platform.pathSeparator + 'ios').existsSync()
+      ? '✅ iOS folder found.'
+      : '⚠️ iOS folder not found.');
 
 // ── Environment Evidence ───────────────────────────────────
-final evidence = buildEvidence(path);
-reportEvidence(evidence);
+  final evidence = buildEvidence(path);
+  reportEvidence(evidence);
 
 // ── Flutter Analyze ─────────────────────────────────────────
-final analysisResult = FlutterAnalyzer().analyze(path);
-report(analysisResult);
+  final analysisResult = FlutterAnalyzer().analyze(path);
+  report(analysisResult);
   if (analysisResult != null) {
     final prioritizer = const IssuePrioritizer();
     final prioritized = prioritizer.prioritize(analysisResult);

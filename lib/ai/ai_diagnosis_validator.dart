@@ -117,7 +117,7 @@ class AiDiagnosisValidator {
       for (final f in rawFiles) {
         final fStr = f.toString();
         final normPath = fStr.replaceAll('\\', '/');
-        if (allowedFiles.isEmpty || allowedFiles.contains(normPath)) {
+        if (allowedFiles.contains(normPath)) {
           if (affectedFiles.length < 20) {
             affectedFiles.add(fStr);
           }
@@ -129,9 +129,8 @@ class AiDiagnosisValidator {
 
       // Match deterministic confidence and occurrence count from context evidence
       RootCauseConfidence deterministicConf = RootCauseConfidence.unknown;
-      int occurrenceCount = item['occurrence_count'] is int
-          ? item['occurrence_count'] as int
-          : 1;
+      int occurrenceCount =
+          item['occurrence_count'] is int ? item['occurrence_count'] as int : 1;
 
       for (final rc in context.rootCauses) {
         if (title.toLowerCase().contains(rc.title.toLowerCase()) ||
@@ -227,16 +226,28 @@ class AiDiagnosisValidator {
 
   Set<String> _extractAllowedFiles(AiContext context) {
     final files = <String>{};
+
+    final pathPattern = RegExp(
+      r'(?:^|\s)(lib[\\/][^\s:,]+(?:\.dart))',
+    );
+
     for (final rc in context.rootCauses) {
+      for (final f in rc.affectedFiles) {
+        files.add(f.trim().replaceAll('\\', '/'));
+      }
+
       for (final ev in rc.evidenceSummary) {
-        if (ev.contains('/')) {
-          final idx = ev.indexOf(':');
-          if (idx != -1) {
-            files.add(ev.substring(idx + 1).trim().replaceAll('\\', '/'));
+        final normalized = ev.replaceAll('\\', '/');
+
+        for (final match in pathPattern.allMatches(normalized)) {
+          final path = match.group(1);
+          if (path != null) {
+            files.add(path.trim());
           }
         }
       }
     }
+
     return files;
   }
 

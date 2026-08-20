@@ -978,7 +978,9 @@ void main() {
       }
     });
 
-    test('10. Normal execution is deterministic and offline-guaranteed (zero network)', () async {
+    test(
+        '10. Normal execution is deterministic and offline-guaranteed (zero network)',
+        () async {
       await runDoctor([]);
       expect(true, isTrue);
     });

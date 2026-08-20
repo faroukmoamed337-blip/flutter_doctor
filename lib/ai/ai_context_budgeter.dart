@@ -22,6 +22,7 @@ class AiContextBudgeter {
               confidence: rc.confidence,
               occurrenceCount: rc.occurrenceCount,
               affectedFileCount: rc.affectedFileCount,
+              affectedFiles: rc.affectedFiles,
               relatedRules: rc.relatedRules,
               evidenceSummary:
                   rc.evidenceSummary.take(maxEvidencePerRootCause).toList(),

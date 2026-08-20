@@ -61,6 +61,7 @@ class AiContextBuilder {
         confidence: rc.confidence.label,
         occurrenceCount: rc.occurrenceCount,
         affectedFileCount: rc.affectedFiles.length,
+        affectedFiles: rc.affectedFiles,
         relatedRules: rc.relatedRules,
         evidenceSummary:
             rc.evidence.map((e) => e.source.label + ': ' + e.value).toList(),

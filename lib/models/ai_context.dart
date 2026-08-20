@@ -43,6 +43,7 @@ class RootCauseSummary {
     required this.confidence,
     required this.occurrenceCount,
     required this.affectedFileCount,
+    this.affectedFiles = const [],
     required this.relatedRules,
     required this.evidenceSummary,
   });
@@ -53,6 +54,7 @@ class RootCauseSummary {
   final String confidence;
   final int occurrenceCount;
   final int affectedFileCount;
+  final List<String> affectedFiles;
   final List<String> relatedRules;
   final List<String> evidenceSummary;
 
